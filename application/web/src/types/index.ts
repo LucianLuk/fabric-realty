@@ -32,11 +32,14 @@ export interface PageResult<T> {
   recordsCount: number;
 }
 
-// 房产信息
-export interface RealEstate {
+// 车辆信息
+export interface Vehicle {
   id: string;
-  propertyAddress: string;
-  area: number;
+  model: string;
+  brand: string;
+  year: number;
+  mileage: number;
+  condition: string;
   currentOwner: string;
   status: 'NORMAL' | 'IN_TRANSACTION';
   createTime: string;
@@ -46,7 +49,7 @@ export interface RealEstate {
 // 交易信息
 export interface Transaction {
   id: string;
-  realEstateId: string;
+  vehicleId: string;
   seller: string;
   buyer: string;
   price: number;
@@ -55,8 +58,8 @@ export interface Transaction {
   updateTime: string;
 }
 
-// 房产列表查询结果
-export type RealEstatePageResult = PageResult<RealEstate>;
+// 车辆列表查询结果
+export type VehiclePageResult = PageResult<Vehicle>;
 
 // 交易列表查询结果
 export type TransactionPageResult = PageResult<Transaction>; 

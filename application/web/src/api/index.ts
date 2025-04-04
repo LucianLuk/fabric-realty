@@ -1,26 +1,29 @@
 import request from '../utils/request';
-import type { RealEstatePageResult, TransactionPageResult, RealEstate, Transaction, BlockQueryResult } from '../types';
+import type { VehiclePageResult, TransactionPageResult, Vehicle, Transaction, BlockQueryResult } from '../types';
 
-// 不动产登记机构接口
-export const realtyAgencyApi = {
-  // 创建房产信息
-  createRealEstate: (data: {
+// 车辆管理机构接口
+export const VehicleAgencyApi = {
+  // 创建车辆信息
+  createVehicle: (data: {
     id: string;
-    address: string;
-    area: number;
+    model: string;
+    brand: string;
+    year: number;
+    mileage: number;
+    condition: string;
     owner: string;
-  }) => request.post<never, void>('/realty-agency/realty/create', data),
+  }) => request.post<never, void>('/vehicle-agency/vehicle/create', data),
 
-  // 查询房产信息
-  getRealEstate: (id: string) => request.get<never, RealEstate>(`/realty-agency/realty/${id}`),
+  // 查询车辆信息
+  getVehicleById: (id: string) => request.get<never, Vehicle>(`/vehicle-agency/vehicle/${id}`),
 
-  // 分页查询房产列表
-  getRealEstateList: (params: { pageSize: number; bookmark: string; status?: string }) =>
-    request.get<never, RealEstatePageResult>('/realty-agency/realty/list', { params }),
+  // 分页查询车辆列表
+  getVehicleList: (params: { pageSize: number; bookmark: string; status?: string }) =>
+    request.get<never, VehiclePageResult>('/vehicle-agency/vehicle/list', { params }),
 
   // 分页查询区块列表
   getBlockList: (params: { pageSize?: number; pageNum?: number }) =>
-    request.get<never, BlockQueryResult>('/realty-agency/block/list', { params }),
+    request.get<never, BlockQueryResult>('/vehicle-agency/block/list', { params }),
 };
 
 // 交易平台接口
@@ -28,14 +31,14 @@ export const tradingPlatformApi = {
   // 生成交易
   createTransaction: (data: {
     txId: string;
-    realEstateId: string;
+    vehicleId: string;
     seller: string;
     buyer: string;
     price: number;
   }) => request.post<never, void>('/trading-platform/transaction/create', data),
 
-  // 查询房产信息
-  getRealEstate: (id: string) => request.get<never, RealEstate>(`/trading-platform/realty/${id}`),
+  // 查询车辆信息
+  getVehicle: (id: string) => request.get<never, Vehicle>(`/trading-platform/vehicle/${id}`),
 
   // 查询交易信息
   getTransaction: (txId: string) => request.get<never, Transaction>(`/trading-platform/transaction/${txId}`),

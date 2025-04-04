@@ -28,20 +28,20 @@ func main() {
 	apiGroup := r.Group("/api")
 
 	// 注册路由
-	realtyAgencyHandler := api.NewRealtyAgencyHandler()
+	vehicleAgencyHandler := api.NewVehicleAgencyHandler()
 	tradingPlatformHandler := api.NewTradingPlatformHandler()
 	bankHandler := api.NewBankHandler()
 
-	// 不动产登记机构的接口
-	realty := apiGroup.Group("/realty-agency")
+	// 车辆管理机构的接口
+	vehicle := apiGroup.Group("/vehicle-agency")
 	{
-		// 创建房产信息
-		realty.POST("/realty/create", realtyAgencyHandler.CreateRealEstate)
-		// 查询房产接口
-		realty.GET("/realty/:id", realtyAgencyHandler.QueryRealEstate)
-		realty.GET("/realty/list", realtyAgencyHandler.QueryRealEstateList)
+		// 创建车辆信息
+		vehicle.POST("/vehicle/create", vehicleAgencyHandler.CreateVehicle)
+		// 查询车辆接口
+		vehicle.GET("/vehicle/:id", vehicleAgencyHandler.QueryVehicle)
+		vehicle.GET("/vehicle/list", vehicleAgencyHandler.QueryVehicleList)
 		// 查询区块接口
-		realty.GET("/block/list", realtyAgencyHandler.QueryBlockList)
+		vehicle.GET("/block/list", vehicleAgencyHandler.QueryBlockList)
 	}
 
 	// 交易平台的接口
@@ -49,8 +49,8 @@ func main() {
 	{
 		// 生成交易
 		trading.POST("/transaction/create", tradingPlatformHandler.CreateTransaction)
-		// 查询房产接口
-		trading.GET("/realty/:id", tradingPlatformHandler.QueryRealEstate)
+		// 查询车辆接口
+		trading.GET("/vehicle/:id", tradingPlatformHandler.QueryVehicle)
 		// 查询交易接口
 		trading.GET("/transaction/:txId", tradingPlatformHandler.QueryTransaction)
 		trading.GET("/transaction/list", tradingPlatformHandler.QueryTransactionList)

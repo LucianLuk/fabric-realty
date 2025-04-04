@@ -52,15 +52,15 @@
                   </a-tooltip>
                 </div>
               </template>
-              <template v-else-if="column.key === 'realEstateId'">
+              <template v-else-if="column.key === 'vehicleId'">
                 <div class="id-cell">
-                  <a-tooltip :title="record.realEstateId">
-                    <span class="id-text">{{ record.realEstateId }}</span>
+                  <a-tooltip :title="record.vehicleId">
+                    <span class="id-text">{{ record.vehicleId }}</span>
                   </a-tooltip>
                   <a-tooltip title="点击复制">
                     <copy-outlined
                       class="copy-icon"
-                      @click.stop="handleCopy(record.realEstateId)"
+                      @click.stop="handleCopy(record.vehicleId)"
                     />
                   </a-tooltip>
                 </div>
@@ -306,9 +306,9 @@ const columns = [
     }),
   },
   {
-    title: '房产ID',
-    dataIndex: 'realEstateId',
-    key: 'realEstateId',
+    title: '车辆ID',
+    dataIndex: 'vehicleId',
+    key: 'vehicleId',
     width: 180,
     ellipsis: false,
     customCell: () => ({

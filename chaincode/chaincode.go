@@ -12,23 +12,23 @@ import (
 	"github.com/hyperledger/fabric-protos-go-apiv2/peer"
 )
 
-// SmartContract 提供房地产交易的功能
+// SmartContract 提供二手汽车交易的功能
 type SmartContract struct {
 	contractapi.Contract
 }
 
 // 文档类型常量（用于创建复合键）
 const (
-	REAL_ESTATE = "RE" // 房产信息
+	VEHICLE     = "VE" // 车辆信息
 	TRANSACTION = "TX" // 交易信息
 )
 
-// RealEstateStatus 房产状态
-type RealEstateStatus string
+// VehicleStatus 车辆状态
+type VehicleStatus string
 
 const (
-	NORMAL         RealEstateStatus = "NORMAL"         // 正常
-	IN_TRANSACTION RealEstateStatus = "IN_TRANSACTION" // 交易中
+	NORMAL         VehicleStatus = "NORMAL"         // 正常
+	IN_TRANSACTION VehicleStatus = "IN_TRANSACTION" // 交易中
 )
 
 // TransactionStatus 交易状态
@@ -39,27 +39,30 @@ const (
 	COMPLETED TransactionStatus = "COMPLETED" // 已完成
 )
 
-// RealEstate 房产信息
-type RealEstate struct {
-	ID              string           `json:"id"`              // 房产ID
-	PropertyAddress string           `json:"propertyAddress"` // 房产地址
-	Area            float64          `json:"area"`            // 面积
-	CurrentOwner    string           `json:"currentOwner"`    // 当前所有者
-	Status          RealEstateStatus `json:"status"`          // 状态
-	CreateTime      time.Time        `json:"createTime"`      // 创建时间
-	UpdateTime      time.Time        `json:"updateTime"`      // 更新时间
+// Vehicle 车辆信息
+type Vehicle struct {
+	ID           string        `json:"id"`           // 车辆ID (VIN)
+	Model        string        `json:"model"`        // 车型
+	Year         int           `json:"year"`         // 年份
+	Brand        string        `json:"brand"`        // 品牌
+	Mileage      float64       `json:"mileage"`      // 里程数
+	Condition    string        `json:"condition"`    // 车况
+	CurrentOwner string        `json:"currentOwner"` // 当前所有者
+	Status       VehicleStatus `json:"status"`       // 状态
+	CreateTime   time.Time     `json:"createTime"`   // 创建时间
+	UpdateTime   time.Time     `json:"updateTime"`   // 更新时间
 }
 
 // Transaction 交易信息
 type Transaction struct {
-	ID           string            `json:"id"`           // 交易ID
-	RealEstateID string            `json:"realEstateId"` // 房产ID
-	Seller       string            `json:"seller"`       // 卖家
-	Buyer        string            `json:"buyer"`        // 买家
-	Price        float64           `json:"price"`        // 成交价格
-	Status       TransactionStatus `json:"status"`       // 状态
-	CreateTime   time.Time         `json:"createTime"`   // 创建时间
-	UpdateTime   time.Time         `json:"updateTime"`   // 更新时间
+	ID         string            `json:"id"`         // 交易ID
+	VehicleID  string            `json:"vehicleId"`  // 车辆ID
+	Seller     string            `json:"seller"`     // 卖家
+	Buyer      string            `json:"buyer"`      // 买家
+	Price      float64           `json:"price"`      // 成交价格
+	Status     TransactionStatus `json:"status"`     // 状态
+	CreateTime time.Time         `json:"createTime"` // 创建时间
+	UpdateTime time.Time         `json:"updateTime"` // 更新时间
 }
 
 // QueryResult 分页查询结果
@@ -72,9 +75,9 @@ type QueryResult struct {
 
 // 组织 MSP ID 常量
 const (
-	REALTY_ORG_MSPID = "Org1MSP" // 不动产登记机构组织 MSP ID
-	BANK_ORG_MSPID   = "Org2MSP" // 银行组织 MSP ID
-	TRADE_ORG_MSPID  = "Org3MSP" // 交易平台组织 MSP ID
+	VEHICLE_ORG_MSPID = "Org1MSP" // 车辆管理机构组织 MSP ID
+	BANK_ORG_MSPID    = "Org2MSP" // 银行组织 MSP ID
+	TRADE_ORG_MSPID   = "Org3MSP" // 交易平台组织 MSP ID
 )
 
 // 通用方法: 获取客户端身份信息
@@ -126,67 +129,79 @@ func (s *SmartContract) putState(ctx contractapi.TransactionContextInterface, ke
 	return nil
 }
 
-// CreateRealEstate 创建房产信息（仅不动产登记机构组织可以调用）
-func (s *SmartContract) CreateRealEstate(ctx contractapi.TransactionContextInterface, id string, address string, area float64, owner string, createTime time.Time) error {
+// CreateVehicle 创建车辆信息（仅车辆管理机构组织可以调用）
+func (s *SmartContract) CreateVehicle(ctx contractapi.TransactionContextInterface, id string, model string, year int, brand string, mileage float64, condition string, owner string, createTime time.Time) error {
 	// 检查调用者身份
 	clientMSPID, err := s.getClientIdentityMSPID(ctx)
 	if err != nil {
 		return fmt.Errorf("获取调用者身份失败：%v", err)
 	}
 
-	// 验证是否是不动产登记机构组织的成员
-	if clientMSPID != REALTY_ORG_MSPID {
-		return fmt.Errorf("只有不动产登记机构组织成员才能创建房产信息")
+	// 验证是否是车辆管理机构组织的成员
+	if clientMSPID != VEHICLE_ORG_MSPID {
+		return fmt.Errorf("只有车辆管理机构组织成员才能创建车辆信息")
 	}
 
 	// 参数验证
 	if len(id) == 0 {
-		return fmt.Errorf("房产ID不能为空")
+		return fmt.Errorf("车辆ID不能为空")
 	}
-	if len(address) == 0 {
-		return fmt.Errorf("房产地址不能为空")
+	if len(model) == 0 {
+		return fmt.Errorf("车型不能为空")
 	}
-	if area <= 0 {
-		return fmt.Errorf("面积必须大于0")
+	if year <= 0 {
+		return fmt.Errorf("年份必须大于0")
+	}
+	if len(brand) == 0 {
+		return fmt.Errorf("品牌不能为空")
+	}
+	if mileage < 0 {
+		return fmt.Errorf("里程数必须大于等于0")
+	}
+	if len(condition) == 0 {
+		return fmt.Errorf("车况不能为空")
 	}
 	if len(owner) == 0 {
 		return fmt.Errorf("所有者不能为空")
 	}
 
-	// 检查房产是否已存在（检查所有可能的状态）
-	for _, status := range []RealEstateStatus{NORMAL, IN_TRANSACTION} {
-		key, err := s.getCompositeKey(ctx, REAL_ESTATE, []string{string(status), id})
+	// 检查车辆是否已存在（检查所有可能的状态）
+	for _, status := range []VehicleStatus{NORMAL, IN_TRANSACTION} {
+		key, err := s.getCompositeKey(ctx, VEHICLE, []string{string(status), id})
 		if err != nil {
 			return fmt.Errorf("创建复合键失败：%v", err)
 		}
 
 		exists, err := ctx.GetStub().GetState(key)
 		if err != nil {
-			return fmt.Errorf("查询房产信息失败：%v", err)
+			return fmt.Errorf("查询车辆信息失败：%v", err)
 		}
 		if exists != nil {
-			return fmt.Errorf("房产ID %s 已存在", id)
+			return fmt.Errorf("车辆ID %s 已存在", id)
 		}
 	}
 
-	// 创建房产信息
-	realEstate := RealEstate{
-		ID:              id,
-		PropertyAddress: address,
-		Area:            area,
-		CurrentOwner:    owner,
-		Status:          NORMAL,
-		CreateTime:      createTime,
-		UpdateTime:      createTime,
+	// 创建车辆信息
+	vehicle := Vehicle{
+		ID:           id,
+		Model:        model,
+		Year:         year,
+		Brand:        brand,
+		Mileage:      mileage,
+		Condition:    condition,
+		CurrentOwner: owner,
+		Status:       NORMAL,
+		CreateTime:   createTime,
+		UpdateTime:   createTime,
 	}
 
-	// 保存房产信息（复合键：类型_状态_ID）
-	key, err := s.getCompositeKey(ctx, REAL_ESTATE, []string{string(NORMAL), id})
+	// 保存车辆信息（复合键：类型_状态_ID）
+	key, err := s.getCompositeKey(ctx, VEHICLE, []string{string(NORMAL), id})
 	if err != nil {
 		return err
 	}
 
-	err = s.putState(ctx, key, realEstate)
+	err = s.putState(ctx, key, vehicle)
 	if err != nil {
 		return err
 	}
@@ -195,7 +210,7 @@ func (s *SmartContract) CreateRealEstate(ctx contractapi.TransactionContextInter
 }
 
 // CreateTransaction 生成交易（仅交易平台组织可以调用）
-func (s *SmartContract) CreateTransaction(ctx contractapi.TransactionContextInterface, txID string, realEstateID string, seller string, buyer string, price float64, createTime time.Time) error {
+func (s *SmartContract) CreateTransaction(ctx contractapi.TransactionContextInterface, txID string, vehicleID string, seller string, buyer string, price float64, createTime time.Time) error {
 	// 检查调用者身份
 	clientMSPID, err := s.getClientIdentityMSPID(ctx)
 	if err != nil {
@@ -211,8 +226,8 @@ func (s *SmartContract) CreateTransaction(ctx contractapi.TransactionContextInte
 	if len(txID) == 0 {
 		return fmt.Errorf("交易ID不能为空")
 	}
-	if len(realEstateID) == 0 {
-		return fmt.Errorf("房产ID不能为空")
+	if len(vehicleID) == 0 {
+		return fmt.Errorf("车辆ID不能为空")
 	}
 	if len(seller) == 0 {
 		return fmt.Errorf("卖家不能为空")
@@ -227,38 +242,38 @@ func (s *SmartContract) CreateTransaction(ctx contractapi.TransactionContextInte
 		return fmt.Errorf("价格必须大于0")
 	}
 
-	// 查询房产信息
-	realEstateKey, err := s.getCompositeKey(ctx, REAL_ESTATE, []string{string(NORMAL), realEstateID})
+	// 查询车辆信息
+	vehicleKey, err := s.getCompositeKey(ctx, VEHICLE, []string{string(NORMAL), vehicleID})
 	if err != nil {
 		return err
 	}
 
-	var realEstate RealEstate
-	err = s.getState(ctx, realEstateKey, &realEstate)
+	var vehicle Vehicle
+	err = s.getState(ctx, vehicleKey, &vehicle)
 	if err != nil {
 		return err
 	}
 
-	// 检查卖家是否是房产所有者
-	if realEstate.CurrentOwner != seller {
-		return fmt.Errorf("卖家不是房产所有者")
+	// 检查卖家是否是车辆所有者
+	if vehicle.CurrentOwner != seller {
+		return fmt.Errorf("卖家不是车辆所有者")
 	}
 
 	// 生成交易信息
 	transaction := Transaction{
-		ID:           txID,
-		RealEstateID: realEstateID,
-		Seller:       seller,
-		Buyer:        buyer,
-		Price:        price,
-		Status:       PENDING,
-		CreateTime:   createTime,
-		UpdateTime:   createTime,
+		ID:         txID,
+		VehicleID:  vehicleID,
+		Seller:     seller,
+		Buyer:      buyer,
+		Price:      price,
+		Status:     PENDING,
+		CreateTime: createTime,
+		UpdateTime: createTime,
 	}
 
-	// 更新房产状态
-	realEstate.Status = IN_TRANSACTION
-	realEstate.UpdateTime = createTime
+	// 更新车辆状态
+	vehicle.Status = IN_TRANSACTION
+	vehicle.UpdateTime = createTime
 
 	// 保存状态
 	txKey, err := s.getCompositeKey(ctx, TRANSACTION, []string{string(PENDING), txID})
@@ -266,14 +281,14 @@ func (s *SmartContract) CreateTransaction(ctx contractapi.TransactionContextInte
 		return err
 	}
 
-	// 删除旧的房产记录
-	err = ctx.GetStub().DelState(realEstateKey)
+	// 删除旧的车辆记录
+	err = ctx.GetStub().DelState(vehicleKey)
 	if err != nil {
-		return fmt.Errorf("删除旧的房产记录失败：%v", err)
+		return fmt.Errorf("删除旧的车辆记录失败：%v", err)
 	}
 
-	// 创建新的房产记录（使用新状态）
-	newRealEstateKey, err := s.getCompositeKey(ctx, REAL_ESTATE, []string{string(IN_TRANSACTION), realEstateID})
+	// 创建新的车辆记录（使用新状态）
+	newVehicleKey, err := s.getCompositeKey(ctx, VEHICLE, []string{string(IN_TRANSACTION), vehicleID})
 	if err != nil {
 		return err
 	}
@@ -283,7 +298,7 @@ func (s *SmartContract) CreateTransaction(ctx contractapi.TransactionContextInte
 		return err
 	}
 
-	err = s.putState(ctx, newRealEstateKey, realEstate)
+	err = s.putState(ctx, newVehicleKey, vehicle)
 	if err != nil {
 		return err
 	}
@@ -316,22 +331,22 @@ func (s *SmartContract) CompleteTransaction(ctx contractapi.TransactionContextIn
 		return err
 	}
 
-	// 查询房产信息
-	realEstateKey, err := s.getCompositeKey(ctx, REAL_ESTATE, []string{string(IN_TRANSACTION), transaction.RealEstateID})
+	// 查询车辆信息
+	vehicleKey, err := s.getCompositeKey(ctx, VEHICLE, []string{string(IN_TRANSACTION), transaction.VehicleID})
 	if err != nil {
 		return err
 	}
 
-	var realEstate RealEstate
-	err = s.getState(ctx, realEstateKey, &realEstate)
+	var vehicle Vehicle
+	err = s.getState(ctx, vehicleKey, &vehicle)
 	if err != nil {
 		return err
 	}
 
 	// 更新状态
-	realEstate.CurrentOwner = transaction.Buyer
-	realEstate.Status = NORMAL
-	realEstate.UpdateTime = updateTime
+	vehicle.CurrentOwner = transaction.Buyer
+	vehicle.Status = NORMAL
+	vehicle.UpdateTime = updateTime
 
 	transaction.Status = COMPLETED
 	transaction.UpdateTime = updateTime
@@ -342,9 +357,9 @@ func (s *SmartContract) CompleteTransaction(ctx contractapi.TransactionContextIn
 		return fmt.Errorf("删除旧的交易记录失败：%v", err)
 	}
 
-	err = ctx.GetStub().DelState(realEstateKey)
+	err = ctx.GetStub().DelState(vehicleKey)
 	if err != nil {
-		return fmt.Errorf("删除旧的房产记录失败：%v", err)
+		return fmt.Errorf("删除旧的车辆记录失败：%v", err)
 	}
 
 	// 创建新记录
@@ -353,7 +368,7 @@ func (s *SmartContract) CompleteTransaction(ctx contractapi.TransactionContextIn
 		return err
 	}
 
-	newRealEstateKey, err := s.getCompositeKey(ctx, REAL_ESTATE, []string{string(NORMAL), transaction.RealEstateID})
+	newVehicleKey, err := s.getCompositeKey(ctx, VEHICLE, []string{string(NORMAL), transaction.VehicleID})
 	if err != nil {
 		return err
 	}
@@ -363,7 +378,7 @@ func (s *SmartContract) CompleteTransaction(ctx contractapi.TransactionContextIn
 		return err
 	}
 
-	err = s.putState(ctx, newRealEstateKey, realEstate)
+	err = s.putState(ctx, newVehicleKey, vehicle)
 	if err != nil {
 		return err
 	}
@@ -371,30 +386,30 @@ func (s *SmartContract) CompleteTransaction(ctx contractapi.TransactionContextIn
 	return nil
 }
 
-// QueryRealEstate 查询房产信息
-func (s *SmartContract) QueryRealEstate(ctx contractapi.TransactionContextInterface, id string) (*RealEstate, error) {
-	// 遍历所有可能的状态查询房产
-	for _, status := range []RealEstateStatus{NORMAL, IN_TRANSACTION} {
-		key, err := s.getCompositeKey(ctx, REAL_ESTATE, []string{string(status), id})
+// QueryVehicle 查询车辆信息
+func (s *SmartContract) QueryVehicle(ctx contractapi.TransactionContextInterface, id string) (*Vehicle, error) {
+	// 遍历所有可能的状态查询车辆
+	for _, status := range []VehicleStatus{NORMAL, IN_TRANSACTION} {
+		key, err := s.getCompositeKey(ctx, VEHICLE, []string{string(status), id})
 		if err != nil {
 			return nil, fmt.Errorf("创建复合键失败：%v", err)
 		}
 
 		bytes, err := ctx.GetStub().GetState(key)
 		if err != nil {
-			return nil, fmt.Errorf("查询房产信息失败：%v", err)
+			return nil, fmt.Errorf("查询车辆信息失败：%v", err)
 		}
 		if bytes != nil {
-			var realEstate RealEstate
-			err = json.Unmarshal(bytes, &realEstate)
+			var vehicle Vehicle
+			err = json.Unmarshal(bytes, &vehicle)
 			if err != nil {
-				return nil, fmt.Errorf("解析房产信息失败：%v", err)
+				return nil, fmt.Errorf("解析车辆信息失败：%v", err)
 			}
-			return &realEstate, nil
+			return &vehicle, nil
 		}
 	}
 
-	return nil, fmt.Errorf("房产ID %s 不存在", id)
+	return nil, fmt.Errorf("车辆ID %s 不存在", id)
 }
 
 // QueryTransaction 查询交易信息
@@ -423,22 +438,22 @@ func (s *SmartContract) QueryTransaction(ctx contractapi.TransactionContextInter
 	return nil, fmt.Errorf("交易ID %s 不存在", txID)
 }
 
-// QueryRealEstateList 分页查询房产列表
-func (s *SmartContract) QueryRealEstateList(ctx contractapi.TransactionContextInterface, pageSize int32, bookmark string, status string) (*QueryResult, error) {
+// QueryVehicleList 分页查询车辆列表
+func (s *SmartContract) QueryVehicleList(ctx contractapi.TransactionContextInterface, pageSize int32, bookmark string, status string) (*QueryResult, error) {
 	var iterator shim.StateQueryIteratorInterface
 	var metadata *peer.QueryResponseMetadata
 	var err error
 
 	if status != "" {
 		iterator, metadata, err = ctx.GetStub().GetStateByPartialCompositeKeyWithPagination(
-			REAL_ESTATE,
+			VEHICLE,
 			[]string{status},
 			pageSize,
 			bookmark,
 		)
 	} else {
 		iterator, metadata, err = ctx.GetStub().GetStateByPartialCompositeKeyWithPagination(
-			REAL_ESTATE,
+			VEHICLE,
 			[]string{},
 			pageSize,
 			bookmark,
@@ -457,13 +472,13 @@ func (s *SmartContract) QueryRealEstateList(ctx contractapi.TransactionContextIn
 			return nil, fmt.Errorf("获取下一条记录失败：%v", err)
 		}
 
-		var realEstate RealEstate
-		err = json.Unmarshal(queryResponse.Value, &realEstate)
+		var vehicle Vehicle
+		err = json.Unmarshal(queryResponse.Value, &vehicle)
 		if err != nil {
-			return nil, fmt.Errorf("解析房产信息失败：%v", err)
+			return nil, fmt.Errorf("解析车辆信息失败：%v", err)
 		}
 
-		records = append(records, realEstate)
+		records = append(records, vehicle)
 	}
 
 	return &QueryResult{

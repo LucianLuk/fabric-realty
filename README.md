@@ -1,8 +1,8 @@
-# 基于 Hyperledger Fabric 的房地产交易系统
+# 基于 Hyperledger Fabric 的二手汽车交易系统
 
-本项目是一个基于 Hyperledger Fabric 的房地产交易系统，实现了房产登记和交易的业务流程。
+本项目是一个基于 Hyperledger Fabric 的二手汽车交易系统，实现了车辆登记和交易的业务流程。
 
-系统采用联盟链技术，由不动产登记机构、交易平台和银行三个组织共同维护。
+系统采用联盟链技术，由车辆管理机构、交易平台和银行三个组织共同维护。
 
 > 🎓 提供项目教学及问题解答服务，欢迎通过以下方式联系：
 
@@ -49,14 +49,14 @@ http://localhost:8000
 
 #### 业务操作流程
 
-1. 房产登记上链
-    - 不动产登记机构登录系统
-    - 点击"登记新房产"，填写房产信息
-    - 提交后，房产信息将上链保存
+1. 车辆登记上链
+    - 车辆管理机构登录系统
+    - 点击"登记新车辆"，填写车辆信息
+    - 提交后，车辆信息将上链保存
 
 <img width="1337" alt="2" src="https://github.com/user-attachments/assets/e7474b46-f2f5-4561-91db-ed6f27ba858d" />
 
-2. 发起房产交易
+2. 发起车辆交易
     - 交易平台登录系统
     - 点击"生成新交易"，填写交易信息
     - 提交后，交易信息将上链保存
@@ -67,7 +67,7 @@ http://localhost:8000
     - 银行登录系统
     - 核实双方交易信息和资金状态
     - 点击"完成交易"，完成交易
-    - 交易完成后，房产所有权将自动变更
+    - 交易完成后，车辆所有权将自动变更
 
 <img width="1337" alt="4" src="https://github.com/user-attachments/assets/600cc2c2-52e5-4472-9e50-d18cabb27cf2" />
 
@@ -89,8 +89,8 @@ http://localhost:8000
 
 系统由三个组织构成的联盟链网络：
 
-1. 不动产登记机构（Org1）
-    - 负责房产信息的登记
+1. 车辆管理机构（Org1）
+    - 负责车辆信息的登记
     - 维护两个 Peer 节点：peer0.org1 和 peer1.org1
 
 2. 银行（Org2）
@@ -105,10 +105,10 @@ http://localhost:8000
 
 智能合约实现了以下核心功能：
 
-1. 房产信息管理
-    - 创建房产（仅不动产登记机构可操作）
-    - 查询房产信息
-    - 分页查询房产列表
+1. 车辆信息管理
+    - 创建车辆（仅车辆管理机构可操作）
+    - 查询车辆信息
+    - 分页查询车辆列表
 
 2. 交易管理
     - 生成交易（仅交易平台可操作）
@@ -121,20 +121,20 @@ http://localhost:8000
 API 接口设计：
 
 ```
-/api/realty-agency
-  POST /realty/create         # 创建房产信息
-  GET  /realty/:id           # 查询房产信息
-  GET  /realty/list          # 分页查询房产列表
+/api/vehicle-agency
+  POST /vehicle/create         # 创建车辆信息
+  GET  /vehicle/:id           # 查询车辆信息
+  GET  /vehicle/list          # 分页查询车辆列表
     - pageSize: 每页记录数
     - bookmark: 分页标记
-    - status: 房产状态（可选，NORMAL-正常、IN_TRANSACTION-交易中）
+    - status: 车辆状态（可选，NORMAL-正常、IN_TRANSACTION-交易中）
   GET  /block/list           # 分页查询区块列表
     - pageSize: 每页记录数，默认10
     - pageNum: 页码，默认1
 
 /api/trading-platform
   POST /transaction/create    # 生成交易
-  GET  /realty/:id           # 查询房产信息
+  GET  /vehicle/:id           # 查询车辆信息
   GET  /transaction/:txId    # 查询交易信息
   GET  /transaction/list     # 分页查询交易列表
     - pageSize: 每页记录数
@@ -161,9 +161,9 @@ API 接口设计：
 ### 区块链层
 
 - Hyperledger Fabric v2.5.10
-    - 分布式账本存储房产和交易数据
+    - 分布式账本存储车辆和交易数据
     - 智能合约实现业务逻辑和权限控制
-    - 多组织（不动产登记机构、银行、交易平台）的联盟链网络
+    - 多组织（车辆管理机构、银行、交易平台）的联盟链网络
 
 ### 后端（Go）
 

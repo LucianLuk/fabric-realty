@@ -1,3 +1,4 @@
+// @ts-ignore
 import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
@@ -8,8 +9,8 @@ const router = createRouter({
       component: () => import('../views/Home.vue'),
     },
     {
-      path: '/realty-agency',
-      component: () => import('../views/RealtyAgency.vue'),
+      path: '/vehicle-agency',
+      component: () => import('../views/VehicleAgency.vue'),
     },
     {
       path: '/trading-platform',

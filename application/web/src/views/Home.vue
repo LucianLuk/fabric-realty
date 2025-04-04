@@ -6,12 +6,12 @@
     </div>
 
     <div class="home-content">
-      <router-link to="/realty-agency" class="card">
+      <router-link to="/vehicle-agency" class="card">
         <div class="card-icon">
-          <HomeOutlined />
+          <CarOutlined />
         </div>
-        <div class="card-title">不动产登记机构（Org1）</div>
-        <div class="card-description">负责房产信息的登记</div>
+        <div class="card-title">车辆管理机构（Org1）</div>
+        <div class="card-description">负责车辆信息的登记</div>
       </router-link>
 
       <router-link to="/trading-platform" class="card">
@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { HomeOutlined, ShopOutlined, BankOutlined } from '@ant-design/icons-vue';
+import { CarOutlined, ShopOutlined, BankOutlined } from '@ant-design/icons-vue';
 </script>
 
 <style scoped>

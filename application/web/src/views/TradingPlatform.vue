@@ -61,15 +61,15 @@
                   </a-tooltip>
                 </div>
               </template>
-              <template v-else-if="column.key === 'realEstateId'">
+              <template v-else-if="column.key === 'vehicleId'">
                 <div class="id-cell">
-                  <a-tooltip :title="record.realEstateId">
-                    <span class="id-text">{{ record.realEstateId }}</span>
+                  <a-tooltip :title="record.vehicleId">
+                    <span class="id-text">{{ record.vehicleId }}</span>
                   </a-tooltip>
                   <a-tooltip title="点击复制">
                     <copy-outlined
                       class="copy-icon"
-                      @click.stop="handleCopy(record.realEstateId)"
+                      @click.stop="handleCopy(record.vehicleId)"
                     />
                   </a-tooltip>
                 </div>
@@ -115,15 +115,15 @@
         :rules="rules"
         layout="vertical"
       >
-        <a-form-item label="房产ID" name="realEstateId" extra="请输入要交易的房产ID">
+        <a-form-item label="车辆ID" name="vehicleId" extra="请输入要交易的车辆ID">
           <a-input
-            v-model:value="formState.realEstateId"
-            placeholder="请输入房产ID"
-            @change="handleRealEstateIdChange"
+            v-model:value="formState.vehicleId"
+            placeholder="请输入车辆ID"
+            @change="handleVehicleIdChange"
           />
         </a-form-item>
 
-        <a-form-item label="卖家" name="seller" extra="当前房产所有者">
+        <a-form-item label="卖家" name="seller" extra="当前车辆所有者">
           <a-input
             v-model:value="formState.seller"
             placeholder="自动填入当前所有者"
@@ -274,14 +274,14 @@ const showCreateModal = ref(false);
 const modalLoading = ref(false);
 
 const formState = reactive({
-  realEstateId: '',
+  vehicleId: '',
   seller: '',
   buyer: '',
   price: undefined as number | undefined,
 });
 
 const rules = {
-  realEstateId: [{ required: true, message: '请输入房产ID' }],
+  vehicleId: [{ required: true, message: '请输入车辆ID' }],
   seller: [{ required: true, message: '请输入卖家' }],
   buyer: [{ required: true, message: '请输入买家' }],
   price: [
@@ -305,9 +305,9 @@ const columns = [
     }),
   },
   {
-    title: '房产ID',
-    dataIndex: 'realEstateId',
-    key: 'realEstateId',
+    title: '车辆ID',
+    dataIndex: 'vehicleId',
+    key: 'vehicleId',
     width: 180,
     ellipsis: false,
     customCell: () => ({
@@ -449,7 +449,7 @@ const handleCopy = (text: string) => {
   copyToClipboard(text);
 };
 
-const handleRealEstateIdChange = async (e: Event) => {
+const handleVehicleIdChange = async (e: Event) => {
   const id = (e.target as HTMLInputElement).value;
   if (!id) {
     formState.seller = '';
@@ -457,16 +457,16 @@ const handleRealEstateIdChange = async (e: Event) => {
   }
 
   try {
-    const result = await tradingPlatformApi.getRealEstate(id);
+    const result = await tradingPlatformApi.getVehicle(id);
     if (result.status !== 'NORMAL') {
-      message.error('该房产不是正常状态，无法生成交易');
-      formState.realEstateId = '';
+      message.error('该车辆不是正常状态，无法生成交易');
+      formState.vehicleId = '';
       formState.seller = '';
       return;
     }
     formState.seller = result.currentOwner;
   } catch (error: any) {
-    message.error(error.message || '获取房产信息失败');
+    message.error(error.message || '获取车辆信息失败');
     formState.seller = '';
   }
 };
