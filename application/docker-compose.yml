@@ -7,9 +7,9 @@ networks:
 
 services:
   # 后端
-  fabric-realty.server:
-    image: togettoyou/fabric-realty.server:latest
-    container_name: fabric-realty.server
+  fabric-car.server: # 修改服务名
+    image: togettoyou/fabric-car.server:latest # 修改镜像名
+    container_name: fabric-car.server # 修改容器名
     volumes:
       - /usr/share/zoneinfo/Asia/Shanghai:/usr/share/zoneinfo/Asia/Shanghai
       - ./../network/crypto-config:/network/crypto-config
@@ -17,9 +17,9 @@ services:
     networks:
       - fabric_togettoyou_network
   # 前端
-  fabric-realty.web:
-    image: togettoyou/fabric-realty.web:latest
-    container_name: fabric-realty.web
+  fabric-car.web: # 修改服务名
+    image: togettoyou/fabric-car.web:latest # 修改镜像名
+    container_name: fabric-car.web # 修改容器名
     ports:
       - "8000:80"
     networks:

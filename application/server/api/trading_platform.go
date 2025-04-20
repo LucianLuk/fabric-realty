@@ -21,11 +21,11 @@ func NewTradingPlatformHandler() *TradingPlatformHandler {
 // CreateTransaction 生成交易（仅交易平台组织可以调用）
 func (h *TradingPlatformHandler) CreateTransaction(c *gin.Context) {
 	var req struct {
-		TxID         string  `json:"txId"`
-		RealEstateID string  `json:"realEstateId"`
-		Seller       string  `json:"seller"`
-		Buyer        string  `json:"buyer"`
-		Price        float64 `json:"price"`
+		TxID   string  `json:"txId"`
+		CarID  string  `json:"carId"` // 修改为 CarID
+		Seller string  `json:"seller"`
+		Buyer  string  `json:"buyer"`
+		Price  float64 `json:"price"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -33,7 +33,8 @@ func (h *TradingPlatformHandler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	err := h.tradingService.CreateTransaction(req.TxID, req.RealEstateID, req.Seller, req.Buyer, req.Price)
+	// 修改为 CarID
+	err := h.tradingService.CreateTransaction(req.TxID, req.CarID, req.Seller, req.Buyer, req.Price)
 	if err != nil {
 		utils.ServerError(c, "生成交易失败："+err.Error())
 		return
@@ -42,16 +43,17 @@ func (h *TradingPlatformHandler) CreateTransaction(c *gin.Context) {
 	utils.SuccessWithMessage(c, "交易创建成功", nil)
 }
 
-// QueryRealEstate 查询房产信息
-func (h *TradingPlatformHandler) QueryRealEstate(c *gin.Context) {
+// QueryCar 查询汽车信息
+func (h *TradingPlatformHandler) QueryCar(c *gin.Context) {
 	id := c.Param("id")
-	realEstate, err := h.tradingService.QueryRealEstate(id)
+	// 修改为 QueryCar
+	car, err := h.tradingService.QueryCar(id)
 	if err != nil {
-		utils.ServerError(c, "查询房产信息失败："+err.Error())
+		utils.ServerError(c, "查询汽车信息失败："+err.Error())
 		return
 	}
 
-	utils.Success(c, realEstate)
+	utils.Success(c, car)
 }
 
 // QueryTransaction 查询交易信息

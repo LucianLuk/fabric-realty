@@ -32,13 +32,13 @@ export interface PageResult<T> {
   recordsCount: number;
 }
 
-// 房产信息
-export interface RealEstate {
+// 汽车信息 (替代 RealEstate)
+export interface Car {
   id: string;
-  propertyAddress: string;
-  area: number;
+  model: string; // 车型
+  vin: string;   // 车辆识别代号
   currentOwner: string;
-  status: 'NORMAL' | 'IN_TRANSACTION';
+  status: 'AVAILABLE' | 'IN_TRANSACTION' | 'SOLD'; // 修改状态
   createTime: string;
   updateTime: string;
 }
@@ -46,7 +46,7 @@ export interface RealEstate {
 // 交易信息
 export interface Transaction {
   id: string;
-  realEstateId: string;
+  carId: string; // 修改为 carId
   seller: string;
   buyer: string;
   price: number;
@@ -55,8 +55,18 @@ export interface Transaction {
   updateTime: string;
 }
 
-// 房产列表查询结果
-export type RealEstatePageResult = PageResult<RealEstate>;
+// 证书信息 (新增)
+export interface Certificate {
+  certId: string;
+  carId: string;
+  certType: string;
+  fileHash: string;
+  fileLocation: string; // Relative path from server data dir
+  uploadTime: string; // ISO 8601 format string
+}
+
+// 汽车列表查询结果 (替代 RealEstatePageResult)
+export type CarPageResult = PageResult<Car>;
 
 // 交易列表查询结果
-export type TransactionPageResult = PageResult<Transaction>; 
+export type TransactionPageResult = PageResult<Transaction>;

@@ -1,5 +1,5 @@
 <template>
-  <div class="bank">
+  <div class="bank"> <!-- 修改类名 -->
     <div class="app-page-header">
       <a-page-header
         title="银行"
@@ -13,17 +13,18 @@
         <template #extra>
           <div class="card-extra">
             <a-input-search
-              v-model:value="searchId"
+              v-model:value="searchTxId"
               placeholder="输入交易ID进行精确查询"
               style="width: 300px; margin-right: 16px;"
-              @search="handleSearch"
-              @change="handleSearchChange"
+              @search="handleSearchTransaction"
+              @change="handleSearchTxChange"
               allow-clear
             />
             <a-radio-group v-model:value="statusFilter" button-style="solid">
               <a-radio-button value="">全部</a-radio-button>
-              <a-radio-button value="PENDING">待完成</a-radio-button>
+              <a-radio-button value="PENDING">待处理</a-radio-button>
               <a-radio-button value="COMPLETED">已完成</a-radio-button>
+              <a-radio-button value="CANCELLED">已取消</a-radio-button>
             </a-radio-group>
           </div>
         </template>
@@ -39,6 +40,7 @@
             class="custom-table"
           >
             <template #bodyCell="{ column, record }">
+              <!-- ID, Seller, Buyer 复制逻辑保持不变 -->
               <template v-if="column.key === 'id'">
                 <div class="id-cell">
                   <a-tooltip :title="record.id">
@@ -52,18 +54,49 @@
                   </a-tooltip>
                 </div>
               </template>
-              <template v-else-if="column.key === 'realEstateId'">
+              <!-- 修改为 Car ID -->
+              <template v-else-if="column.key === 'carId'">
                 <div class="id-cell">
-                  <a-tooltip :title="record.realEstateId">
-                    <span class="id-text">{{ record.realEstateId }}</span>
+                  <a-tooltip :title="record.carId">
+                    <span class="id-text">{{ record.carId }}</span>
                   </a-tooltip>
                   <a-tooltip title="点击复制">
                     <copy-outlined
                       class="copy-icon"
-                      @click.stop="handleCopy(record.realEstateId)"
+                      @click.stop="handleCopy(record.carId)"
+                    />
+                  </a-tooltip>
+                  <!-- 银行界面通常不需要查询汽车详情，移除详情按钮 -->
+                </div>
+              </template>
+              <template v-else-if="column.key === 'seller'">
+                <div class="id-cell">
+                  <a-tooltip :title="record.seller">
+                    <span class="id-text">{{ record.seller }}</span>
+                  </a-tooltip>
+                  <a-tooltip title="点击复制">
+                    <copy-outlined
+                      class="copy-icon"
+                      @click.stop="handleCopy(record.seller)"
                     />
                   </a-tooltip>
                 </div>
+              </template>
+              <template v-else-if="column.key === 'buyer'">
+                <div class="id-cell">
+                  <a-tooltip :title="record.buyer">
+                    <span class="id-text">{{ record.buyer }}</span>
+                  </a-tooltip>
+                  <a-tooltip title="点击复制">
+                    <copy-outlined
+                      class="copy-icon"
+                      @click.stop="handleCopy(record.buyer)"
+                    />
+                  </a-tooltip>
+                </div>
+              </template>
+              <template v-else-if="column.key === 'price'">
+                <span>¥ {{ record.price.toLocaleString() }}</span>
               </template>
               <template v-else-if="column.key === 'status'">
                 <a-tag :color="getStatusColor(record.status)">
@@ -76,13 +109,13 @@
               <template v-else-if="column.key === 'updateTime'">
                 <time>{{ new Date(record.updateTime).toLocaleString() }}</time>
               </template>
+              <!-- 新增操作列 -->
               <template v-else-if="column.key === 'action'">
                 <a-button
                   type="primary"
                   size="small"
-                  @click="handleComplete(record)"
-                  :loading="record.completing"
-                  :disabled="record.status === 'COMPLETED'"
+                  :disabled="record.status !== 'PENDING'"
+                  @click="handleCompleteTransaction(record.id)"
                 >
                   完成交易
                 </a-button>
@@ -190,27 +223,86 @@
 </template>
 
 <script setup lang="ts">
-import { message } from 'ant-design-vue';
+import { message, Modal } from 'ant-design-vue'; // 导入 Modal
 import { CopyOutlined, ApartmentOutlined } from '@ant-design/icons-vue';
-import { bankApi } from '../api';
-import { ref, reactive } from 'vue';
-import type { BlockData } from '../types';
-import { copyToClipboard, getStatusText, getStatusColor, formatPrice } from '../utils';
+import { bankApi } from '../api'; // API 导入保持不变
+import { ref, reactive, watch, onMounted } from 'vue';
+import type { BlockData, Transaction } from '../types';
+import { copyToClipboard } from '../utils';
 
-const transactionList = ref<any[]>([]);
+// 修改列定义，添加操作列
+const columns = [
+  {
+    title: '交易ID',
+    dataIndex: 'id',
+    key: 'id',
+    width: 180,
+    ellipsis: false,
+    customCell: () => ({ style: { whiteSpace: 'nowrap', overflow: 'hidden' } }),
+  },
+  {
+    title: '汽车ID', // 修改标题
+    dataIndex: 'carId', // 修改 dataIndex
+    key: 'carId', // 修改 key
+    width: 180,
+    ellipsis: false,
+    customCell: () => ({ style: { whiteSpace: 'nowrap', overflow: 'hidden' } }),
+  },
+  {
+    title: '卖方',
+    dataIndex: 'seller',
+    key: 'seller',
+    width: 120,
+    ellipsis: false,
+    customCell: () => ({ style: { whiteSpace: 'nowrap', overflow: 'hidden' } }),
+  },
+  {
+    title: '买方',
+    dataIndex: 'buyer',
+    key: 'buyer',
+    width: 120,
+    ellipsis: false,
+    customCell: () => ({ style: { whiteSpace: 'nowrap', overflow: 'hidden' } }),
+  },
+  {
+    title: '价格 (元)',
+    dataIndex: 'price',
+    key: 'price',
+    width: 120,
+    align: 'right',
+    customCell: () => ({ style: { fontVariantNumeric: 'tabular-nums' } }),
+  },
+  {
+    title: '状态',
+    dataIndex: 'status',
+    key: 'status',
+    width: 100,
+  },
+  {
+    title: '创建时间',
+    dataIndex: 'createTime',
+    key: 'createTime',
+    width: 180,
+  },
+  {
+    title: '更新时间',
+    dataIndex: 'updateTime',
+    key: 'updateTime',
+    width: 180,
+  },
+  {
+    title: '操作', // 新增操作列
+    key: 'action',
+    width: 100,
+    fixed: 'right', // 固定在右侧
+  },
+];
+
+const transactionList = ref<Transaction[]>([]);
 const loading = ref(false);
 const bookmark = ref('');
-const statusFilter = ref('');
-const searchId = ref('');
 
-const blockDrawer = ref(false);
-const blockList = ref<BlockData[]>([]);
-const blockTotal = ref(0);
-const blockQuery = reactive({
-  pageSize: 10,
-  pageNum: 1,
-});
-
+// 加载交易列表函数 (API 调用不变)
 const loadTransactionList = async () => {
   try {
     loading.value = true;
@@ -236,32 +328,26 @@ const loadMore = () => {
   loadTransactionList();
 };
 
-const handleComplete = async (record: any) => {
-  try {
-    record.completing = true;
-    await bankApi.completeTransaction(record.id);
-    message.success('交易完成');
-    // 刷新列表
-    transactionList.value = [];
-    bookmark.value = '';
-    loadTransactionList();
-  } catch (error: any) {
-    message.error(error.message || '完成交易失败');
-  } finally {
-    record.completing = false;
-  }
-};
-
 const handleCopy = (text: string) => {
   copyToClipboard(text);
 };
 
-const handleSearch = async (value: string) => {
+const statusFilter = ref('');
+
+watch(statusFilter, () => {
+  transactionList.value = [];
+  bookmark.value = '';
+  loadTransactionList();
+});
+
+const searchTxId = ref('');
+
+// 搜索交易逻辑 (API 调用不变)
+const handleSearchTransaction = async (value: string) => {
   if (!value) {
     message.warning('请输入要查询的交易ID');
     return;
   }
-
   try {
     const result = await bankApi.getTransaction(value);
     transactionList.value = [result];
@@ -272,110 +358,74 @@ const handleSearch = async (value: string) => {
   }
 };
 
-const handleSearchChange = (e: Event) => {
+const handleSearchTxChange = (e: Event) => {
   const value = (e.target as HTMLInputElement).value;
   if (!value) {
-    // 当搜索框清空时，重新加载列表
     transactionList.value = [];
     bookmark.value = '';
     loadTransactionList();
   }
 };
 
-// 监听状态筛选变化
-watch(statusFilter, () => {
-  // 重置列表和书签
-  transactionList.value = [];
-  bookmark.value = '';
-  // 重新加载数据
-  loadTransactionList();
-});
+// 状态显示逻辑 (保持不变)
+const getStatusColor = (status: Transaction['status']) => {
+  switch (status) {
+    case 'PENDING': return 'processing';
+    case 'COMPLETED': return 'success';
+    case 'CANCELLED': return 'error';
+    default: return 'default';
+  }
+};
+const getStatusText = (status: Transaction['status']) => {
+  switch (status) {
+    case 'PENDING': return '待处理';
+    case 'COMPLETED': return '已完成';
+    case 'CANCELLED': return '已取消';
+    default: return '未知';
+  }
+};
 
-const columns = [
-  {
-    title: '交易ID',
-    dataIndex: 'id',
-    key: 'id',
-    width: 180,
-    ellipsis: false,
-    customCell: () => ({
-      style: {
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
+// 新增：完成交易逻辑
+const handleCompleteTransaction = (txId: string) => {
+  Modal.confirm({
+    title: '确认完成交易',
+    content: `您确定要完成交易 ID 为 ${txId} 的交易吗？此操作不可撤销。`,
+    okText: '确认完成',
+    cancelText: '取消',
+    onOk: async () => {
+      try {
+        await bankApi.completeTransaction(txId);
+        message.success('交易完成成功');
+        // 刷新列表
+        transactionList.value = [];
+        bookmark.value = '';
+        await loadTransactionList();
+      } catch (error: any) {
+        message.error(error.message || '完成交易失败');
       }
-    }),
-  },
-  {
-    title: '房产ID',
-    dataIndex: 'realEstateId',
-    key: 'realEstateId',
-    width: 180,
-    ellipsis: false,
-    customCell: () => ({
-      style: {
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-      }
-    }),
-  },
-  {
-    title: '卖家',
-    dataIndex: 'seller',
-    key: 'seller',
-    width: 120,
-    ellipsis: true,
-  },
-  {
-    title: '买家',
-    dataIndex: 'buyer',
-    key: 'buyer',
-    width: 120,
-    ellipsis: true,
-  },
-  {
-    title: '价格',
-    dataIndex: 'price',
-    key: 'price',
-    width: 120,
-    customRender: ({ text }: { text: number }) => formatPrice(text),
-  },
-  {
-    title: '状态',
-    dataIndex: 'status',
-    key: 'status',
-    width: 100,
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'createTime',
-    key: 'createTime',
-    width: 180,
-  },
-  {
-    title: '更新时间',
-    dataIndex: 'updateTime',
-    key: 'updateTime',
-    width: 180,
-  },
-  {
-    title: '操作',
-    key: 'action',
-    width: 100,
-    fixed: 'right',
-  },
-];
+    },
+  });
+};
+
 
 onMounted(() => {
   loadTransactionList();
 });
 
-// 打开区块抽屉
+// 区块信息部分 (API 调用不变)
+const blockDrawer = ref(false);
+const blockList = ref<BlockData[]>([]);
+const blockTotal = ref(0);
+const blockQuery = reactive({
+  pageSize: 10,
+  pageNum: 1,
+});
+
 const openBlockDrawer = async () => {
   blockDrawer.value = true;
   await fetchBlockList();
 };
 
-// 获取区块列表
 const fetchBlockList = async () => {
   try {
     const res = await bankApi.getBlockList({
@@ -389,13 +439,168 @@ const fetchBlockList = async () => {
   }
 };
 
-// 处理分页变化
 const handleBlockPageChange = async (page: number, pageSize: number) => {
   blockQuery.pageNum = page;
   blockQuery.pageSize = pageSize;
   await fetchBlockList();
 };
+
 </script>
 
 <style scoped>
+/* 样式可以保持不变，或者根据需要调整 */
+.bank { /* 保持与 template 中一致 */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f0f2f5;
+}
+
+.app-page-header {
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.app-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.card-extra {
+  display: flex;
+  align-items: center;
+}
+
+.table-container {
+  margin-top: 16px;
+}
+
+.custom-table .id-cell {
+  display: flex;
+  align-items: center;
+}
+
+.custom-table .id-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px; /* 根据需要调整 */
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.custom-table .copy-icon {
+  margin-left: 8px;
+  cursor: pointer;
+  color: #1890ff;
+  vertical-align: middle;
+}
+
+.load-more {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.block-icon {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #1890ff;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s;
+}
+
+.block-icon:hover {
+  background-color: #40a9ff;
+}
+
+.block-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.block-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px; /* 防止滚动条遮挡 */
+}
+
+.block-item {
+  margin-bottom: 16px;
+}
+
+.block-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.block-number {
+  font-weight: 500;
+}
+
+.block-time {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.block-item-content {
+  font-size: 13px;
+}
+
+.block-field {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.field-label {
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.65);
+  margin-right: 8px;
+  min-width: 70px; /* 调整对齐 */
+}
+
+.field-value {
+  flex: 1;
+  word-break: break-all;
+}
+
+.field-value.hash {
+  font-family: 'Courier New', Courier, monospace;
+  max-width: calc(100% - 100px); /* 调整防止过长 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.block-item-content .copy-icon {
+  margin-left: 8px;
+  cursor: pointer;
+  color: #1890ff;
+  vertical-align: middle;
+}
+
 </style>

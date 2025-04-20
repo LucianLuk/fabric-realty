@@ -31,7 +31,27 @@ export const generateRandomArea = () => {
   return Number((Math.random() * (300 - 50) + 50).toFixed(2));
 };
 
-// 随机生成价格（50-1000万）
+// 随机生成价格（5-100万）
 export const generateRandomPrice = () => {
-  return Number((Math.random() * (10000000 - 500000) + 500000).toFixed(2));
-}; 
+  return Number((Math.random() * (1000000 - 50000) + 50000).toFixed(2)); // 调整价格范围
+};
+
+// 随机生成汽车型号
+const carBrands = ['特斯拉', '比亚迪', '蔚来', '小鹏', '理想', '宝马', '奔驰', '奥迪', '丰田', '本田'];
+const carModels = ['Model 3', 'Model Y', '汉', '唐', '宋', 'ET7', 'ES6', 'P7', 'G9', 'L9', '3系', 'C级', 'A4', '凯美瑞', '雅阁'];
+
+export const generateRandomCarModel = () => {
+  const brand = carBrands[Math.floor(Math.random() * carBrands.length)];
+  const model = carModels[Math.floor(Math.random() * carModels.length)];
+  return `${brand} ${model}`;
+};
+
+// 随机生成17位VIN
+export const generateRandomVIN = () => {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let vin = '';
+  for (let i = 0; i < 17; i++) {
+    vin += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return vin;
+};

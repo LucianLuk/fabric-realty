@@ -12,30 +12,32 @@ type TradingPlatformService struct{}
 const TRADE_ORG = "org3" // 交易平台组织
 
 // CreateTransaction 生成交易
-func (s *TradingPlatformService) CreateTransaction(txID, realEstateID, seller, buyer string, price float64) error {
+func (s *TradingPlatformService) CreateTransaction(txID, carID, seller, buyer string, price float64) error { // 修改 realEstateID 为 carID
 	contract := fabric.GetContract(TRADE_ORG)
 	now := time.Now().Format(time.RFC3339)
-	_, err := contract.SubmitTransaction("CreateTransaction", txID, realEstateID, seller, buyer, fmt.Sprintf("%f", price), now)
+	// 注意：链码函数名 CreateTransaction 的参数也需要对应修改
+	_, err := contract.SubmitTransaction("CreateTransaction", txID, carID, seller, buyer, fmt.Sprintf("%f", price), now)
 	if err != nil {
 		return fmt.Errorf("生成交易失败：%s", fabric.ExtractErrorMessage(err))
 	}
 	return nil
 }
 
-// QueryRealEstate 查询房产信息
-func (s *TradingPlatformService) QueryRealEstate(id string) (map[string]interface{}, error) {
+// QueryCar 查询汽车信息
+func (s *TradingPlatformService) QueryCar(id string) (map[string]interface{}, error) { // 修改函数名和返回类型注释
 	contract := fabric.GetContract(TRADE_ORG)
-	result, err := contract.EvaluateTransaction("QueryRealEstate", id)
+	// 注意：链码函数名也需要修改为 QueryCar
+	result, err := contract.EvaluateTransaction("QueryCar", id)
 	if err != nil {
-		return nil, fmt.Errorf("查询房产信息失败：%s", fabric.ExtractErrorMessage(err))
+		return nil, fmt.Errorf("查询汽车信息失败：%s", fabric.ExtractErrorMessage(err))
 	}
 
-	var realEstate map[string]interface{}
-	if err := json.Unmarshal(result, &realEstate); err != nil {
-		return nil, fmt.Errorf("解析房产数据失败：%v", err)
+	var car map[string]interface{} // 修改变量名
+	if err := json.Unmarshal(result, &car); err != nil {
+		return nil, fmt.Errorf("解析汽车数据失败：%v", err) // 修改错误信息
 	}
 
-	return realEstate, nil
+	return car, nil // 修改返回值
 }
 
 // QueryTransaction 查询交易信息

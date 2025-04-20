@@ -28,20 +28,25 @@ func main() {
 	apiGroup := r.Group("/api")
 
 	// 注册路由
-	realtyAgencyHandler := api.NewRealtyAgencyHandler()
+	carDealerHandler := api.NewCarDealerHandler()
 	tradingPlatformHandler := api.NewTradingPlatformHandler()
 	bankHandler := api.NewBankHandler()
 
-	// 不动产登记机构的接口
-	realty := apiGroup.Group("/realty-agency")
+	// 汽车经销商的接口
+	car := apiGroup.Group("/car-dealer")
 	{
-		// 创建房产信息
-		realty.POST("/realty/create", realtyAgencyHandler.CreateRealEstate)
-		// 查询房产接口
-		realty.GET("/realty/:id", realtyAgencyHandler.QueryRealEstate)
-		realty.GET("/realty/list", realtyAgencyHandler.QueryRealEstateList)
+		// 创建汽车信息
+		car.POST("/car/create", carDealerHandler.CreateCar)
+		// 查询汽车接口
+		car.GET("/car/:id", carDealerHandler.QueryCar)
+		car.GET("/car/list", carDealerHandler.QueryCarList)
+		// 证书接口 (修改路径以避免冲突)
+		car.POST("/certificates/:carId", carDealerHandler.UploadCertificate)                              // 上传证书
+		car.GET("/certificates/:carId", carDealerHandler.ListCertificates)                                // 获取证书列表
+		car.GET("/certificates/verify/:certId", carDealerHandler.VerifyCertificateHandler)                // 验证证书 (修改路径)
+		car.POST("/certificates/verify-upload/:carId", carDealerHandler.VerifyUploadedCertificateHandler) // 上传文件进行验证 (新增)
 		// 查询区块接口
-		realty.GET("/block/list", realtyAgencyHandler.QueryBlockList)
+		car.GET("/block/list", carDealerHandler.QueryBlockList)
 	}
 
 	// 交易平台的接口
@@ -49,8 +54,8 @@ func main() {
 	{
 		// 生成交易
 		trading.POST("/transaction/create", tradingPlatformHandler.CreateTransaction)
-		// 查询房产接口
-		trading.GET("/realty/:id", tradingPlatformHandler.QueryRealEstate)
+		// 查询汽车接口
+		trading.GET("/car/:id", tradingPlatformHandler.QueryCar)
 		// 查询交易接口
 		trading.GET("/transaction/:txId", tradingPlatformHandler.QueryTransaction)
 		trading.GET("/transaction/list", tradingPlatformHandler.QueryTransactionList)
@@ -69,6 +74,11 @@ func main() {
 		// 查询区块接口
 		bank.GET("/block/list", bankHandler.QueryBlockList)
 	}
+
+	// 配置静态文件服务 (新增)
+	// 将 URL 路径 /api/files/ 映射到服务器本地的 ./data/ 目录
+	// 例如: 访问 /api/files/certificates/car1/cert1.pdf 会读取 ./data/certificates/car1/cert1.pdf
+	r.Static("/api/files", "./data")
 
 	// 启动服务器
 	addr := fmt.Sprintf(":%d", config.GlobalConfig.Server.Port)

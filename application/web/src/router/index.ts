@@ -8,8 +8,8 @@ const router = createRouter({
       component: () => import('../views/Home.vue'),
     },
     {
-      path: '/realty-agency',
-      component: () => import('../views/RealtyAgency.vue'),
+      path: '/car-dealer', // 修改路径
+      component: () => import('../views/CarDealer.vue'), // 修改组件路径
     },
     {
       path: '/trading-platform',
@@ -22,4 +22,4 @@ const router = createRouter({
   ],
 })
 
-export default router 
+export default router

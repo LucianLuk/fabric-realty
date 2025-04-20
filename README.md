@@ -1,8 +1,8 @@
-# 基于 Hyperledger Fabric 的房地产交易系统
+# 基于 Hyperledger Fabric 的二手车交易系统
 
-本项目是一个基于 Hyperledger Fabric 的房地产交易系统，实现了房产登记和交易的业务流程。
+本项目是一个基于 Hyperledger Fabric 的二手车交易系统，实现了汽车登记和交易的业务流程。
 
-系统采用联盟链技术，由不动产登记机构、交易平台和银行三个组织共同维护。
+系统采用联盟链技术，由汽车经销商、交易平台和银行三个组织共同维护。
 
 > 🎓 提供项目教学及问题解答服务，欢迎通过以下方式联系：
 
@@ -28,13 +28,13 @@
 1. 拉取项目（或手动下载）
 
    ```bash
-   git clone --depth 1 https://github.com/togettoyou/fabric-realty.git
+   git clone --depth 1 https://github.com/togettoyou/fabric-realty.git # 仓库名暂时保持不变
    ```
 
 2. 设置脚本权限
 
    ```bash
-   cd fabric-realty
+   cd fabric-realty # 目录名暂时保持不变
    find . -name "*.sh" -exec chmod +x {} \;
    ```
 
@@ -62,27 +62,27 @@ http://localhost:8000
 
 #### 业务操作流程
 
-1. 房产登记上链
-    - 不动产登记机构登录系统
-    - 点击"登记新房产"，填写房产信息
-    - 提交后，房产信息将上链保存
+1. 汽车登记上链
+    - 汽车经销商登录系统
+    - 点击"登记新汽车"，填写汽车信息
+    - 提交后，汽车信息将上链保存
 
-<img width="1337" alt="2" src="https://github.com/user-attachments/assets/e7474b46-f2f5-4561-91db-ed6f27ba858d" />
+<img width="1337" alt="2" src="https://github.com/user-attachments/assets/e7474b46-f2f5-4561-91db-ed6f27ba858d" /> <!-- 图片暂时保留 -->
 
-2. 发起房产交易
+2. 发起汽车交易
     - 交易平台登录系统
     - 点击"生成新交易"，填写交易信息
     - 提交后，交易信息将上链保存
 
-<img width="1337" alt="3" src="https://github.com/user-attachments/assets/c3977cb0-cd48-495a-ab3b-6d244a81b6e0" />
+<img width="1337" alt="3" src="https://github.com/user-attachments/assets/c3977cb0-cd48-495a-ab3b-6d244a81b6e0" /> <!-- 图片暂时保留 -->
 
 3. 银行确认交易
     - 银行登录系统
     - 核实双方交易信息和资金状态
     - 点击"完成交易"，完成交易
-    - 交易完成后，房产所有权将自动变更
+    - 交易完成后，汽车所有权将自动变更
 
-<img width="1337" alt="4" src="https://github.com/user-attachments/assets/600cc2c2-52e5-4472-9e50-d18cabb27cf2" />
+<img width="1337" alt="4" src="https://github.com/user-attachments/assets/600cc2c2-52e5-4472-9e50-d18cabb27cf2" /> <!-- 图片暂时保留 -->
 
 4. 区块链浏览
     - 所有组织都可以查看区块信息
@@ -102,8 +102,8 @@ http://localhost:8000
 
 系统由三个组织构成的联盟链网络：
 
-1. 不动产登记机构（Org1）
-    - 负责房产信息的登记
+1. 汽车经销商（Org1）
+    - 负责汽车信息的登记
     - 维护两个 Peer 节点：peer0.org1 和 peer1.org1
 
 2. 银行（Org2）
@@ -118,10 +118,10 @@ http://localhost:8000
 
 智能合约实现了以下核心功能：
 
-1. 房产信息管理
-    - 创建房产（仅不动产登记机构可操作）
-    - 查询房产信息
-    - 分页查询房产列表
+1. 汽车信息管理
+    - 创建汽车（仅汽车经销商可操作）
+    - 查询汽车信息
+    - 分页查询汽车列表
 
 2. 交易管理
     - 生成交易（仅交易平台可操作）
@@ -134,25 +134,25 @@ http://localhost:8000
 API 接口设计：
 
 ```
-/api/realty-agency
-  POST /realty/create         # 创建房产信息
-  GET  /realty/:id           # 查询房产信息
-  GET  /realty/list          # 分页查询房产列表
+/api/car-dealer # 修改路径
+  POST /car/create         # 创建汽车信息
+  GET  /car/:id           # 查询汽车信息
+  GET  /car/list          # 分页查询汽车列表
     - pageSize: 每页记录数
     - bookmark: 分页标记
-    - status: 房产状态（可选，NORMAL-正常、IN_TRANSACTION-交易中）
+    - status: 汽车状态（可选，AVAILABLE-待售、IN_TRANSACTION-交易中、SOLD-已售）
   GET  /block/list           # 分页查询区块列表
     - pageSize: 每页记录数，默认10
     - pageNum: 页码，默认1
 
 /api/trading-platform
   POST /transaction/create    # 生成交易
-  GET  /realty/:id           # 查询房产信息
+  GET  /car/:id           # 查询汽车信息
   GET  /transaction/:txId    # 查询交易信息
   GET  /transaction/list     # 分页查询交易列表
     - pageSize: 每页记录数
     - bookmark: 分页标记
-    - status: 交易状态（可选，PENDING-待付款、COMPLETED-已完成）
+    - status: 交易状态（可选，PENDING-待处理、COMPLETED-已完成、CANCELLED-已取消）
   GET  /block/list           # 分页查询区块列表
     - pageSize: 每页记录数，默认10
     - pageNum: 页码，默认1
@@ -163,7 +163,7 @@ API 接口设计：
   GET  /transaction/list     # 分页查询交易列表
     - pageSize: 每页记录数
     - bookmark: 分页标记
-    - status: 交易状态（可选，PENDING-待付款、COMPLETED-已完成）
+    - status: 交易状态（可选，PENDING-待处理、COMPLETED-已完成、CANCELLED-已取消）
   GET  /block/list           # 分页查询区块列表
     - pageSize: 每页记录数，默认10
     - pageNum: 页码，默认1
@@ -174,9 +174,9 @@ API 接口设计：
 ### 区块链层
 
 - Hyperledger Fabric v2.5.10
-    - 分布式账本存储房产和交易数据
+    - 分布式账本存储汽车和交易数据
     - 智能合约实现业务逻辑和权限控制
-    - 多组织（不动产登记机构、银行、交易平台）的联盟链网络
+    - 多组织（汽车经销商、银行、交易平台）的联盟链网络
 
 ### 后端（Go）
 

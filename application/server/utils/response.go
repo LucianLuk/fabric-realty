@@ -22,6 +22,15 @@ func Success(c *gin.Context, data interface{}) {
 	})
 }
 
+// NotFound responds with a 404 Not Found error
+func NotFound(c *gin.Context, message string) {
+	c.JSON(http.StatusNotFound, Response{
+		Code:    http.StatusNotFound,
+		Message: message,
+		Data:    nil,
+	})
+}
+
 // SuccessWithMessage 带消息的成功响应
 func SuccessWithMessage(c *gin.Context, message string, data interface{}) {
 	c.JSON(http.StatusOK, Response{

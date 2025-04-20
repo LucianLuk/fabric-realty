@@ -6,12 +6,12 @@
     </div>
 
     <div class="home-content">
-      <router-link to="/realty-agency" class="card">
+      <router-link to="/car-dealer" class="card"> <!-- 修改链接 -->
         <div class="card-icon">
-          <HomeOutlined />
+          <CarOutlined /> <!-- 修改图标 -->
         </div>
-        <div class="card-title">不动产登记机构（Org1）</div>
-        <div class="card-description">负责房产信息的登记</div>
+        <div class="card-title">汽车经销商（Org1）</div> <!-- 修改标题 -->
+        <div class="card-description">负责汽车信息的登记</div> <!-- 修改描述 -->
       </router-link>
 
       <router-link to="/trading-platform" class="card">
@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { HomeOutlined, ShopOutlined, BankOutlined } from '@ant-design/icons-vue';
+import { CarOutlined, ShopOutlined, BankOutlined } from '@ant-design/icons-vue'; // 修改导入的图标
 </script>
 
 <style scoped>
@@ -117,4 +117,4 @@ import { HomeOutlined, ShopOutlined, BankOutlined } from '@ant-design/icons-vue'
     flex-direction: column;
   }
 }
-</style> 
+</style>

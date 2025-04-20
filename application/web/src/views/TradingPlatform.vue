@@ -1,5 +1,5 @@
 <template>
-  <div class="trading-platform">
+  <div class="trading-platform"> <!-- 修改类名 -->
     <div class="app-page-header">
       <a-page-header
         title="交易平台"
@@ -10,7 +10,7 @@
           <a-tooltip title="点击创建新的交易">
             <a-button type="primary" @click="showCreateModal = true">
               <template #icon><PlusOutlined /></template>
-              生成新交易
+              创建新交易
             </a-button>
           </a-tooltip>
         </template>
@@ -22,17 +22,18 @@
         <template #extra>
           <div class="card-extra">
             <a-input-search
-              v-model:value="searchId"
+              v-model:value="searchTxId"
               placeholder="输入交易ID进行精确查询"
               style="width: 300px; margin-right: 16px;"
-              @search="handleSearch"
-              @change="handleSearchChange"
+              @search="handleSearchTransaction"
+              @change="handleSearchTxChange"
               allow-clear
             />
             <a-radio-group v-model:value="statusFilter" button-style="solid">
               <a-radio-button value="">全部</a-radio-button>
-              <a-radio-button value="PENDING">待完成</a-radio-button>
+              <a-radio-button value="PENDING">待处理</a-radio-button>
               <a-radio-button value="COMPLETED">已完成</a-radio-button>
+              <a-radio-button value="CANCELLED">已取消</a-radio-button>
             </a-radio-group>
           </div>
         </template>
@@ -48,6 +49,7 @@
             class="custom-table"
           >
             <template #bodyCell="{ column, record }">
+              <!-- ID, Seller, Buyer 复制逻辑保持不变 -->
               <template v-if="column.key === 'id'">
                 <div class="id-cell">
                   <a-tooltip :title="record.id">
@@ -61,18 +63,55 @@
                   </a-tooltip>
                 </div>
               </template>
-              <template v-else-if="column.key === 'realEstateId'">
+              <!-- 修改为 Car ID -->
+              <template v-else-if="column.key === 'carId'">
                 <div class="id-cell">
-                  <a-tooltip :title="record.realEstateId">
-                    <span class="id-text">{{ record.realEstateId }}</span>
+                  <a-tooltip :title="record.carId">
+                    <span class="id-text">{{ record.carId }}</span>
                   </a-tooltip>
                   <a-tooltip title="点击复制">
                     <copy-outlined
                       class="copy-icon"
-                      @click.stop="handleCopy(record.realEstateId)"
+                      @click.stop="handleCopy(record.carId)"
+                    />
+                  </a-tooltip>
+                  <!-- 添加查询汽车详情的链接 -->
+                  <a-tooltip title="查询汽车详情">
+                    <InfoCircleOutlined
+                      class="info-icon"
+                      @click.stop="showCarDetails(record.carId)"
                     />
                   </a-tooltip>
                 </div>
+              </template>
+              <template v-else-if="column.key === 'seller'">
+                <div class="id-cell">
+                  <a-tooltip :title="record.seller">
+                    <span class="id-text">{{ record.seller }}</span>
+                  </a-tooltip>
+                  <a-tooltip title="点击复制">
+                    <copy-outlined
+                      class="copy-icon"
+                      @click.stop="handleCopy(record.seller)"
+                    />
+                  </a-tooltip>
+                </div>
+              </template>
+              <template v-else-if="column.key === 'buyer'">
+                <div class="id-cell">
+                  <a-tooltip :title="record.buyer">
+                    <span class="id-text">{{ record.buyer }}</span>
+                  </a-tooltip>
+                  <a-tooltip title="点击复制">
+                    <copy-outlined
+                      class="copy-icon"
+                      @click.stop="handleCopy(record.buyer)"
+                    />
+                  </a-tooltip>
+                </div>
+              </template>
+              <template v-else-if="column.key === 'price'">
+                <span>¥ {{ record.price.toLocaleString() }}</span>
               </template>
               <template v-else-if="column.key === 'status'">
                 <a-tag :color="getStatusColor(record.status)">
@@ -100,14 +139,20 @@
       </a-card>
     </div>
 
-    <!-- 生成交易的对话框 -->
+    <div
+      class="block-icon"
+      @click="openBlockDrawer"
+    >
+      <ApartmentOutlined />
+    </div>
+
+    <!-- 创建交易的对话框 -->
     <a-modal
       v-model:visible="showCreateModal"
-      title="生成新交易"
+      title="创建新交易"
       @ok="handleModalOk"
       @cancel="handleModalCancel"
       :confirmLoading="modalLoading"
-      :style="{ top: '40px' }"
     >
       <a-form
         ref="formRef"
@@ -115,27 +160,44 @@
         :rules="rules"
         layout="vertical"
       >
-        <a-form-item label="房产ID" name="realEstateId" extra="请输入要交易的房产ID">
-          <a-input
-            v-model:value="formState.realEstateId"
-            placeholder="请输入房产ID"
-            @change="handleRealEstateIdChange"
-          />
+        <!-- 修改为 Car ID -->
+        <a-form-item label="汽车ID" name="carId" extra="请输入要交易的汽车的ID">
+          <a-input-group compact>
+            <a-input
+              v-model:value="formState.carId"
+              placeholder="请输入汽车ID"
+              style="width: calc(100% - 110px)"
+            />
+            <a-tooltip title="随机生成一个ID (仅用于测试)">
+              <a-button @click="generateRandomCarId">
+                <template #icon><ReloadOutlined /></template>
+                随机生成
+              </a-button>
+            </a-tooltip>
+          </a-input-group>
         </a-form-item>
 
-        <a-form-item label="卖家" name="seller" extra="当前房产所有者">
-          <a-input
-            v-model:value="formState.seller"
-            placeholder="自动填入当前所有者"
-            disabled
-          />
+        <a-form-item label="卖方" name="seller" extra="可以输入任意模拟用户名">
+          <a-input-group compact>
+            <a-input
+              v-model:value="formState.seller"
+              placeholder="请输入卖方姓名"
+              style="width: calc(100% - 110px)"
+            />
+            <a-tooltip title="随机生成一个用户名">
+              <a-button @click="generateRandomSeller">
+                <template #icon><ReloadOutlined /></template>
+                随机生成
+              </a-button>
+            </a-tooltip>
+          </a-input-group>
         </a-form-item>
 
-        <a-form-item label="买家" name="buyer" extra="可以输入任意模拟用户名作为买家">
+        <a-form-item label="买方" name="buyer" extra="可以输入任意模拟用户名">
           <a-input-group compact>
             <a-input
               v-model:value="formState.buyer"
-              placeholder="请输入买家姓名"
+              placeholder="请输入买方姓名"
               style="width: calc(100% - 110px)"
             />
             <a-tooltip title="随机生成一个用户名">
@@ -147,16 +209,14 @@
           </a-input-group>
         </a-form-item>
 
-        <a-form-item label="价格" name="price" extra="请输入大于0的交易金额">
+        <a-form-item label="价格（元）" name="price" extra="请输入大于0的数值">
           <a-input-group compact>
             <a-input-number
               v-model:value="formState.price"
               :min="0.01"
               :step="0.01"
               style="width: calc(100% - 110px)"
-              placeholder="请输入价格"
-              :formatter="value => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')"
-              :parser="value => value!.replace(/\¥\s?|(,*)/g, '')"
+              placeholder="请输入交易价格"
             />
             <a-tooltip title="随机生成一个价格">
               <a-button @click="generateRandomPriceHandler">
@@ -174,12 +234,28 @@
       </a-form>
     </a-modal>
 
-    <div
-      class="block-icon"
-      @click="openBlockDrawer"
+    <!-- 汽车详情对话框 -->
+    <a-modal
+      v-model:visible="showCarDetailModal"
+      title="汽车详情"
+      :footer="null"
+      :width="600"
     >
-      <ApartmentOutlined />
-    </div>
+      <a-descriptions v-if="currentCar" bordered :column="1">
+        <a-descriptions-item label="汽车ID">{{ currentCar.id }}</a-descriptions-item>
+        <a-descriptions-item label="车型">{{ currentCar.model }}</a-descriptions-item>
+        <a-descriptions-item label="VIN">{{ currentCar.vin }}</a-descriptions-item>
+        <a-descriptions-item label="当前所有者">{{ currentCar.currentOwner }}</a-descriptions-item>
+        <a-descriptions-item label="状态">
+          <a-tag :color="currentCar.status === 'AVAILABLE' ? 'green' : (currentCar.status === 'IN_TRANSACTION' ? 'blue' : 'orange')">
+            {{ currentCar.status === 'AVAILABLE' ? '待售' : (currentCar.status === 'IN_TRANSACTION' ? '交易中' : '已售') }}
+          </a-tag>
+        </a-descriptions-item>
+        <a-descriptions-item label="创建时间">{{ new Date(currentCar.createTime).toLocaleString() }}</a-descriptions-item>
+        <a-descriptions-item label="更新时间">{{ new Date(currentCar.updateTime).toLocaleString() }}</a-descriptions-item>
+      </a-descriptions>
+      <a-spin v-else />
+    </a-modal>
 
     <!-- 区块信息抽屉 -->
     <a-drawer
@@ -257,39 +333,43 @@
         </div>
       </div>
     </a-drawer>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { message } from 'ant-design-vue';
-import { PlusOutlined, InfoCircleOutlined, CopyOutlined, ReloadOutlined, ApartmentOutlined } from '@ant-design/icons-vue';
-import { tradingPlatformApi } from '../api';
+import { PlusOutlined, InfoCircleOutlined, ReloadOutlined, CopyOutlined, ApartmentOutlined } from '@ant-design/icons-vue';
+import { tradingPlatformApi } from '../api'; // API 导入保持不变
 import type { FormInstance } from 'ant-design-vue';
-import { ref, reactive } from 'vue';
-import type { BlockData } from '../types';
-import { copyToClipboard, generateRandomName, generateRandomPrice, generateUUID, getStatusText, getStatusColor, formatPrice } from '../utils';
+import { ref, reactive, watch, onMounted } from 'vue';
+import type { BlockData, Transaction, Car } from '../types'; // 导入 Car 类型
+import { copyToClipboard, generateRandomName, generateRandomPrice, generateUUID } from '../utils';
 
 const formRef = ref<FormInstance>();
 const showCreateModal = ref(false);
 const modalLoading = ref(false);
 
+// 修改表单状态
 const formState = reactive({
-  realEstateId: '',
+  carId: '', // 修改为 carId
   seller: '',
   buyer: '',
   price: undefined as number | undefined,
 });
 
+// 修改验证规则
 const rules = {
-  realEstateId: [{ required: true, message: '请输入房产ID' }],
-  seller: [{ required: true, message: '请输入卖家' }],
-  buyer: [{ required: true, message: '请输入买家' }],
+  carId: [{ required: true, message: '请输入汽车ID' }], // 修改为 carId
+  seller: [{ required: true, message: '请输入卖方' }],
+  buyer: [{ required: true, message: '请输入买方' }],
   price: [
     { required: true, message: '请输入价格' },
     { type: 'number', min: 0.01, message: '价格必须大于0' }
   ],
 };
 
+// 修改列定义
 const columns = [
   {
     title: '交易ID',
@@ -297,46 +377,39 @@ const columns = [
     key: 'id',
     width: 180,
     ellipsis: false,
-    customCell: () => ({
-      style: {
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-      }
-    }),
+    customCell: () => ({ style: { whiteSpace: 'nowrap', overflow: 'hidden' } }),
   },
   {
-    title: '房产ID',
-    dataIndex: 'realEstateId',
-    key: 'realEstateId',
+    title: '汽车ID', // 修改标题
+    dataIndex: 'carId', // 修改 dataIndex
+    key: 'carId', // 修改 key
     width: 180,
     ellipsis: false,
-    customCell: () => ({
-      style: {
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-      }
-    }),
+    customCell: () => ({ style: { whiteSpace: 'nowrap', overflow: 'hidden' } }),
   },
   {
-    title: '卖家',
+    title: '卖方',
     dataIndex: 'seller',
     key: 'seller',
     width: 120,
-    ellipsis: true,
+    ellipsis: false,
+    customCell: () => ({ style: { whiteSpace: 'nowrap', overflow: 'hidden' } }),
   },
   {
-    title: '买家',
+    title: '买方',
     dataIndex: 'buyer',
     key: 'buyer',
     width: 120,
-    ellipsis: true,
+    ellipsis: false,
+    customCell: () => ({ style: { whiteSpace: 'nowrap', overflow: 'hidden' } }),
   },
   {
-    title: '价格',
+    title: '价格 (元)',
     dataIndex: 'price',
     key: 'price',
     width: 120,
-    customRender: ({ text }: { text: number }) => formatPrice(text),
+    align: 'right',
+    customCell: () => ({ style: { fontVariantNumeric: 'tabular-nums' } }),
   },
   {
     title: '状态',
@@ -358,10 +431,11 @@ const columns = [
   },
 ];
 
-const transactionList = ref<any[]>([]);
+const transactionList = ref<Transaction[]>([]); // 类型保持 Transaction
 const loading = ref(false);
 const bookmark = ref('');
 
+// 加载交易列表函数 (API 调用不变)
 const loadTransactionList = async () => {
   try {
     loading.value = true;
@@ -387,37 +461,16 @@ const loadMore = () => {
   loadTransactionList();
 };
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'PENDING':
-      return 'blue';
-    case 'COMPLETED':
-      return 'green';
-    default:
-      return 'default';
-  }
-};
-
-const getStatusText = (status: string) => {
-  switch (status) {
-    case 'PENDING':
-      return '待完成';
-    case 'COMPLETED':
-      return '已完成';
-    default:
-      return '未知';
-  }
-};
-
+// 修改模态框确认逻辑
 const handleModalOk = () => {
   formRef.value?.validate().then(async () => {
     modalLoading.value = true;
     try {
-      const transactionData = {
+      const transactionData = { // 修改变量名
         ...formState,
-        txId: generateUUID(),
+        txId: generateUUID(), // 生成交易ID
       };
-      await tradingPlatformApi.createTransaction(transactionData);
+      await tradingPlatformApi.createTransaction(transactionData); // API 调用不变，但参数已修改
       message.success('交易创建成功');
       showCreateModal.value = false;
       formRef.value?.resetFields();
@@ -437,6 +490,24 @@ const handleModalCancel = () => {
   formRef.value?.resetFields();
 };
 
+// 修改随机生成函数
+const generateRandomCarId = () => {
+  formState.carId = generateUUID().substring(0, 8); // 简单生成一个随机ID
+};
+const generateRandomSeller = () => {
+  formState.seller = generateRandomName();
+};
+const generateRandomBuyer = () => {
+  formState.buyer = generateRandomName();
+};
+const generateRandomPriceHandler = () => {
+  formState.price = generateRandomPrice();
+};
+
+const handleCopy = (text: string) => {
+  copyToClipboard(text);
+};
+
 const statusFilter = ref('');
 
 watch(statusFilter, () => {
@@ -445,48 +516,14 @@ watch(statusFilter, () => {
   loadTransactionList();
 });
 
-const handleCopy = (text: string) => {
-  copyToClipboard(text);
-};
+const searchTxId = ref('');
 
-const handleRealEstateIdChange = async (e: Event) => {
-  const id = (e.target as HTMLInputElement).value;
-  if (!id) {
-    formState.seller = '';
-    return;
-  }
-
-  try {
-    const result = await tradingPlatformApi.getRealEstate(id);
-    if (result.status !== 'NORMAL') {
-      message.error('该房产不是正常状态，无法生成交易');
-      formState.realEstateId = '';
-      formState.seller = '';
-      return;
-    }
-    formState.seller = result.currentOwner;
-  } catch (error: any) {
-    message.error(error.message || '获取房产信息失败');
-    formState.seller = '';
-  }
-};
-
-const generateRandomBuyer = () => {
-  formState.buyer = generateRandomName();
-};
-
-const generateRandomPriceHandler = () => {
-  formState.price = generateRandomPrice();
-};
-
-const searchId = ref('');
-
-const handleSearch = async (value: string) => {
+// 搜索交易逻辑 (API 调用不变)
+const handleSearchTransaction = async (value: string) => {
   if (!value) {
     message.warning('请输入要查询的交易ID');
     return;
   }
-
   try {
     const result = await tradingPlatformApi.getTransaction(value);
     transactionList.value = [result];
@@ -497,7 +534,7 @@ const handleSearch = async (value: string) => {
   }
 };
 
-const handleSearchChange = (e: Event) => {
+const handleSearchTxChange = (e: Event) => {
   const value = (e.target as HTMLInputElement).value;
   if (!value) {
     transactionList.value = [];
@@ -506,6 +543,29 @@ const handleSearchChange = (e: Event) => {
   }
 };
 
+// 状态显示逻辑
+const getStatusColor = (status: Transaction['status']) => {
+  switch (status) {
+    case 'PENDING': return 'processing';
+    case 'COMPLETED': return 'success';
+    case 'CANCELLED': return 'error';
+    default: return 'default';
+  }
+};
+const getStatusText = (status: Transaction['status']) => {
+  switch (status) {
+    case 'PENDING': return '待处理';
+    case 'COMPLETED': return '已完成';
+    case 'CANCELLED': return '已取消';
+    default: return '未知';
+  }
+};
+
+onMounted(() => {
+  loadTransactionList();
+});
+
+// 区块信息部分 (API 调用不变)
 const blockDrawer = ref(false);
 const blockList = ref<BlockData[]>([]);
 const blockTotal = ref(0);
@@ -538,10 +598,195 @@ const handleBlockPageChange = async (page: number, pageSize: number) => {
   await fetchBlockList();
 };
 
-onMounted(() => {
-  loadTransactionList();
-});
+// 新增：汽车详情模态框逻辑
+const showCarDetailModal = ref(false);
+const currentCar = ref<Car | null>(null);
+
+const showCarDetails = async (carId: string) => {
+  currentCar.value = null; // 重置
+  showCarDetailModal.value = true;
+  try {
+    // 使用交易平台的 API 查询汽车信息
+    currentCar.value = await tradingPlatformApi.getCar(carId);
+  } catch (error: any) {
+    message.error(error.message || '查询汽车详情失败');
+    showCarDetailModal.value = false; // 查询失败则关闭模态框
+  }
+};
+
 </script>
 
 <style scoped>
+/* 样式可以保持不变，或者根据需要调整 */
+.trading-platform { /* 保持与 template 中一致 */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f0f2f5;
+}
+
+.app-page-header {
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.app-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.card-extra {
+  display: flex;
+  align-items: center;
+}
+
+.table-container {
+  margin-top: 16px;
+}
+
+.custom-table .id-cell {
+  display: flex;
+  align-items: center;
+}
+
+.custom-table .id-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px; /* 根据需要调整 */
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.custom-table .copy-icon {
+  margin-left: 8px;
+  cursor: pointer;
+  color: #1890ff;
+  vertical-align: middle;
+}
+
+/* 新增：汽车详情图标样式 */
+.custom-table .info-icon {
+  margin-left: 8px;
+  cursor: pointer;
+  color: #1890ff;
+  vertical-align: middle;
+}
+
+
+.load-more {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.block-icon {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #1890ff;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s;
+}
+
+.block-icon:hover {
+  background-color: #40a9ff;
+}
+
+.form-tips {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 14px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.block-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.block-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px; /* 防止滚动条遮挡 */
+}
+
+.block-item {
+  margin-bottom: 16px;
+}
+
+.block-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.block-number {
+  font-weight: 500;
+}
+
+.block-time {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.block-item-content {
+  font-size: 13px;
+}
+
+.block-field {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.field-label {
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.65);
+  margin-right: 8px;
+  min-width: 70px; /* 调整对齐 */
+}
+
+.field-value {
+  flex: 1;
+  word-break: break-all;
+}
+
+.field-value.hash {
+  font-family: 'Courier New', Courier, monospace;
+  max-width: calc(100% - 100px); /* 调整防止过长 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.block-item-content .copy-icon {
+  margin-left: 8px;
+  cursor: pointer;
+  color: #1890ff;
+  vertical-align: middle;
+}
+
 </style>
