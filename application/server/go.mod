@@ -7,6 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hyperledger/fabric-gateway v1.7.0
 	github.com/hyperledger/fabric-protos-go-apiv2 v0.3.4
+	github.com/stretchr/testify v1.9.0
 	go.etcd.io/bbolt v1.3.11
 	google.golang.org/grpc v1.67.1
 	gopkg.in/yaml.v3 v3.0.1
