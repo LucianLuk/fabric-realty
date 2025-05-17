@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings" // Added for string manipulation
 	"time"
 
 	"github.com/hyperledger/fabric-chaincode-go/v2/pkg/cid"
@@ -615,6 +616,28 @@ func (s *SmartContract) AddCertificate(ctx contractapi.TransactionContextInterfa
 		return fmt.Errorf("文件位置不能为空")
 	}
 	// 可以在此添加更多验证，例如 CertType 是否在允许列表内
+
+	// 新增验证: 确保 FileLocation 符合预期的格式。
+	// 1. FileLocation 不应是绝对路径 (简单检查常见的绝对路径指示符)
+	if strings.HasPrefix(cert.FileLocation, "/") || strings.Contains(cert.FileLocation, ":\\") || strings.Contains(cert.FileLocation, ":/") {
+		return fmt.Errorf("文件位置 (FileLocation) '%s' 不应是绝对路径，应为相对于 '%s' 的路径，例如 'CAR_ID/filename.ext'", cert.FileLocation, "application/server/data/certificates/")
+	}
+	// 2. FileLocation 应该以 CarID 开头，后跟一个路径分隔符 '/'
+	//    这与用户期望在 "data/certificates里面的对应车辆的文件夹" 中找到文件一致
+	expectedPrefix := cert.CarID + "/"
+	if !strings.HasPrefix(cert.FileLocation, expectedPrefix) {
+		return fmt.Errorf("文件位置 (FileLocation) '%s' 必须以车辆ID '%s/' 开头 (例如: '%sfilename.ext')", cert.FileLocation, cert.CarID, expectedPrefix)
+	}
+	// 3. FileLocation CarID/ 之后必须有文件名 (文件名不能为空)
+	if len(cert.FileLocation) <= len(expectedPrefix) {
+		return fmt.Errorf("文件位置 (FileLocation) '%s' 在车辆ID '%s/' 之后必须包含有效的文件名", cert.FileLocation, cert.CarID)
+	}
+	// 4. 文件名部分不应包含额外的路径分隔符 (即文件应直接在 CarID 目录下)
+	remainingPath := cert.FileLocation[len(expectedPrefix):]
+	if strings.Contains(remainingPath, "/") {
+		return fmt.Errorf("文件位置 (FileLocation) '%s' 在车辆ID '%s/' 之后不应包含额外的子目录路径，应直接是文件名", cert.FileLocation, cert.CarID)
+	}
+
 
 	// 检查证书是否已存在
 	certKey, err := s.getCompositeKey(ctx, CERTIFICATE, []string{cert.CertID})
